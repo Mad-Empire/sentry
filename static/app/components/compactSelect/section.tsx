@@ -151,8 +151,6 @@ const SectionTitle = styled('p')`
 `;
 
 const ToggleAllButton = styled(Button)<{visible: boolean}>`
-  font-size: inherit; /* Inherit font size from MenuHeader */
-  color: ${p => p.theme.subText};
   padding: 0 ${space(0.5)};
   margin: 0 -${space(0.5)} 0 ${space(2)};
 
