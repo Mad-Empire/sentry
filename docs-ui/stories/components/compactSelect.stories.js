@@ -1,4 +1,4 @@
-import CompactSelect from 'sentry/components/compactSelect';
+import {CompactSelect} from 'sentry/components/compactSelect';
 
 export default {
   title: 'Components/Compact Select',
@@ -9,25 +9,16 @@ export const _CompactSelect = props => (
   <CompactSelect
     defaultValue={props.multiple ? ['choice_one'] : 'choice_one'}
     options={[
-      {
-        label: 'Section 1',
-        options: [
-          {value: 'choice_one', label: 'Choice One'},
-          {value: 'choice_two', label: 'Choice Two'},
-        ],
-      },
-      {
-        label: 'Section 2',
-        options: [
-          {value: 'choice_three', label: 'Choice Three'},
-          {value: 'choice_four', label: 'Choice Four'},
-        ],
-      },
+      {value: 'choice_one', label: 'Choice One'},
+      {value: 'choice_two', label: 'Choice Two'},
+      {value: 'choice_three', label: 'Choice Three'},
+      {value: 'choice_four', label: 'Choice Four'},
     ]}
     {...props}
   />
 );
 
+_CompactSelect.storyName = 'Default';
 _CompactSelect.args = {
   size: 'md',
   value: undefined,
@@ -92,3 +83,35 @@ _CompactSelect.argTypes = {
   maxMenuHeight: {control: {type: 'number'}},
   triggerLabel: {control: {type: 'text'}},
 };
+
+export const _CompactSelectGrouped = props => (
+  <CompactSelect
+    defaultValue={props.multiple ? ['choice_one'] : 'choice_one'}
+    options={[
+      {
+        label: 'Section 1',
+        showToggleAllButton: true,
+        options: [
+          {value: 'choice_one', label: 'Choice One'},
+          {value: 'choice_two', label: 'Choice Two'},
+        ],
+      },
+      {
+        label: 'Section 2',
+        showToggleAllButton: true,
+        options: [
+          {value: 'choice_three', label: 'Choice Three'},
+          {value: 'choice_four', label: 'Choice Four'},
+        ],
+      },
+    ]}
+    {...props}
+  />
+);
+
+_CompactSelectGrouped.storyName = 'Grouped';
+_CompactSelectGrouped.args = {
+  ..._CompactSelect.args,
+  multiple: true,
+};
+_CompactSelectGrouped.argTypes = _CompactSelect.argTypes;

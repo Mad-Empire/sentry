@@ -1,12 +1,15 @@
 import {Fragment, useContext, useEffect, useMemo, useRef, useState} from 'react';
 import styled from '@emotion/styled';
 import {useFocusManager} from '@react-aria/focus';
-import {useKeyboard} from '@react-aria/interactions';
+import {useFocus, useKeyboard} from '@react-aria/interactions';
 import {AriaListBoxOptions, useListBox} from '@react-aria/listbox';
 import {mergeProps} from '@react-aria/utils';
-import {ListProps, useListState} from '@react-stately/list';
-import {Selection} from '@react-types/shared';
+import {VisuallyHidden} from '@react-aria/visually-hidden';
+import {ListProps, ListState, useListState} from '@react-stately/list';
+import {SelectionManager} from '@react-stately/selection';
+import {Node, Selection} from '@react-types/shared';
 
+import {t} from 'sentry/locale';
 import space from 'sentry/styles/space';
 import {defined} from 'sentry/utils';
 import {FormSize} from 'sentry/utils/theme';
@@ -258,11 +261,31 @@ function ListBox<Value extends React.Key>({
     },
   });
 
+  /**
+   * IDs of section toggles (`HiddenSectionToggle`, see below) to be marked as children
+   * of the list box (`ul`) element in the accessibility tree (via the `aria-owns`
+   * attribute), to better indicate that the toggles control the list box's state.
+   */
+  const ariaOwns = useMemo(
+    () =>
+      filteredItems
+        .map(item =>
+          item.type === 'section' ? `${listBoxProps.id}-section-toggle-${item.key}` : null
+        )
+        .flat()
+        .join(' '),
+    [filteredItems, listBoxProps.id]
+  );
+
   return (
     <Fragment>
       {filteredItems.length !== 0 && <Separator role="separator" />}
       {filteredItems.length !== 0 && label && <Label {...labelProps}>{label}</Label>}
-      <SelectListBoxWrap {...mergeProps(listBoxProps, keyboardProps)} ref={ref}>
+      <SelectListBoxWrap
+        {...mergeProps(listBoxProps, keyboardProps)}
+        aria-owns={ariaOwns}
+        ref={ref}
+      >
         {overlayIsOpen &&
           filteredItems.map(item => {
             if (item.type === 'section') {
@@ -288,11 +311,97 @@ function ListBox<Value extends React.Key>({
             );
           })}
       </SelectListBoxWrap>
+
+      {multiple &&
+        filteredItems.map(item => {
+          if (item.type !== 'section') {
+            return null;
+          }
+
+          return (
+            <HiddenSectionToggle
+              key={item.key}
+              id={`${listBoxProps.id}-section-toggle-${item.key}`}
+              item={item}
+              listState={listState}
+              listBoxRef={ref}
+            />
+          );
+        })}
     </Fragment>
   );
 }
 
 export {ListBox};
+
+interface HiddenSectionToggleProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  item: Node<any>;
+  listBoxRef: React.RefObject<HTMLUListElement>;
+  listState: ListState<any>;
+}
+
+/**
+ * A visually hidden but keyboard-focusable button to toggle (select/unselect) all
+ * options in a given section. We need these hidden buttons because the visible toggle
+ * buttons inside ListBox are not keyboard-focusable (due to ListBox implementing roving
+ * `tabindex`).
+ */
+function HiddenSectionToggle({
+  item,
+  listState,
+  listBoxRef,
+  ...props
+}: HiddenSectionToggleProps) {
+  // Highlight this toggle's visible counterpart (rendered inside the list box) on focus
+  const {focusProps} = useFocus({
+    onFocus: () => {
+      const visibleCounterpart = listBoxRef.current?.querySelector(
+        `li[data-key="${item.key}"] button[aria-hidden]`
+      );
+
+      if (!visibleCounterpart) {
+        return;
+      }
+      visibleCounterpart.classList.add('focus-visible');
+    },
+    onBlur: () => {
+      const visibleCounterpart = listBoxRef.current?.querySelector(
+        `li[data-key="${item.key}"] button[aria-hidden]`
+      );
+
+      if (!visibleCounterpart) {
+        return;
+      }
+      visibleCounterpart.classList.remove('focus-visible');
+    },
+  });
+
+  const optionKeys = useMemo(
+    () => [...item.childNodes].map(opt => opt.key),
+    [item.childNodes]
+  );
+
+  /**
+   * Whether all options in this section are currently selected
+   */
+  const allOptionsSelected = useMemo(
+    () => optionKeys.every(key => listState.selectionManager.isSelected(key)),
+    [optionKeys, listState.selectionManager]
+  );
+
+  return (
+    <VisuallyHidden role="presentation">
+      <button
+        {...props}
+        {...focusProps}
+        onClick={() => toggleOptions(optionKeys, listState.selectionManager)}
+      >
+        {allOptionsSelected ? t('Unselect All in ') : t('Select All in ')}
+        {item.textValue ?? item.rendered}
+      </button>
+    </VisuallyHidden>
+  );
+}
 
 /**
  * Recursively finds the selected option(s) from an options array. Useful for
@@ -341,6 +450,27 @@ function getDisabledOptions<Value extends React.Key>(
     }
     return acc;
   }, []);
+}
+
+/**
+ * Selects/unselects all provided options. If none/some of the options are selected,
+ * then this function selects all of them. If all of the options are selected, then this
+ * function unselects all of them.
+ */
+export function toggleOptions<Value extends React.Key>(
+  optionValues: Value[],
+  selectionManager: SelectionManager
+) {
+  const {selectedKeys} = selectionManager;
+  const newSelectedKeys = new Set(selectedKeys);
+
+  const allOptionsSelected = optionValues.every(val => selectionManager.isSelected(val));
+
+  optionValues.forEach(val =>
+    allOptionsSelected ? newSelectedKeys.delete(val) : newSelectedKeys.add(val)
+  );
+
+  selectionManager.setSelectedKeys(newSelectedKeys);
 }
 
 const SelectListBoxWrap = styled('ul')`
