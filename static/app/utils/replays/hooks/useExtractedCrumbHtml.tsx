@@ -1,8 +1,8 @@
 import {useEffect, useState} from 'react';
 import * as Sentry from '@sentry/react';
 import first from 'lodash/first';
-import {Replayer} from 'rrweb';
-import {eventWithTime} from 'rrweb/typings/types';
+import {Replayer} from '@sentry-internal/rrweb';
+import {eventWithTime} from '@sentry-internal/rrweb/typings/types';
 
 import type {Crumb} from 'sentry/types/breadcrumbs';
 import type ReplayReader from 'sentry/utils/replays/replayReader';
@@ -202,7 +202,6 @@ function extractNode(crumb: Crumb, replayer: Replayer) {
   // @ts-expect-error
   const nodeId = crumb.data?.nodeId || '';
   const node = mirror.getNode(nodeId);
-  // @ts-expect-error
   const html = node?.outerHTML || node?.textContent || '';
 
   // Limit document node depth to 2
