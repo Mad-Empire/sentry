@@ -202,6 +202,7 @@ function extractNode(crumb: Crumb, replayer: Replayer) {
   // @ts-expect-error
   const nodeId = crumb.data?.nodeId || '';
   const node = mirror.getNode(nodeId);
+  // @ts-expect-error
   const html = node?.outerHTML || node?.textContent || '';
 
   // Limit document node depth to 2
