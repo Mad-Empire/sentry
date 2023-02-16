@@ -400,3 +400,9 @@ family:native function:*.cold.1 category=indirection
 [ category:runtime ]    | category:system  category=internals
 [ category:runtime ]    | category:runtime category=internals
 [ category:dtor ]       | category:dtor    category=internals
+
+# SDK specific rules
+
+## python
+stack.abs_path:**/site-packages/** -app
+stack.abs_path:**/dist-packages/** -app
