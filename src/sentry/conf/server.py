@@ -1035,6 +1035,8 @@ SENTRY_FEATURES = {
     "organizations:profiling-previews": False,
     # Whether to enable ingest for profile blocked main thread issues
     "organizations:profile-blocked-main-thread-ingest": False,
+    # Whether to enable post process group for profile blocked main thread issues
+    "organizations:profile-blocked-main-thread-ppg": False,
     # Enable multi project selection
     "organizations:global-views": False,
     # Enable experimental new version of Merged Issues where sub-hashes are shown
